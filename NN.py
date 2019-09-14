@@ -1,16 +1,43 @@
-from numpy import exp, array, random, dot
+from numpy import exp, array, random, dot, log
 from tqdm import trange
 
-def sigmoid(x):
-    return 1 / (1 + exp(-x))
-    
-def sigmoid_deriv(x):
-    return x * (1 - x)
+class Activation:
+	def activation(x):
+		pass
+	
+	def derivative(x):
+		pass
 
-class NeuronLayer():
-    def __init__(self, neuron_count, input_count):
+class Sigmoid(Activation):
+	
+	def activation(x):
+		return 1 / (1 + exp(-x))
+	
+	def derivative(x):
+		return x * (1 - x)
 
+class TanH(Activation):
+
+	def activation(x):
+		return (2 / (1 + exp(-2 * x))) - 1
+	
+	def derivative(x):
+		return 1 - pow(self.activation(x), 2)
+
+class SoftPlus(Activation):
+
+	def activation(x):
+		return log(1 + exp(x))
+	
+	def derivative(x):
+		return 1 / (1 + exp(-x))
+
+class Layer():
+    def __init__(self, input_count, neuron_count, activation = Sigmoid):
+        
+        self.activation = activation
         self.weights = 2 * random.random((input_count, neuron_count)) - 1
+        self.biases = 2 * random.random((1, neuron_count)) - 1
         self.outputs = []
         self.inputs = []
         self.error = []
@@ -20,14 +47,15 @@ class NeuronLayer():
         self.error = layer_before.delta.dot(layer_before.weights.T)
 
     def calc_delta(self):
-        self.delta = self.error * sigmoid_deriv(self.outputs)
+        self.delta = self.error * self.activation.derivative(self.outputs)
 
-    def adjust(self):
-        self.weights += self.inputs.T.dot(self.delta)
+    def adjust(self, learning_rate):
+        self.weights += self.inputs.T.dot(self.delta) * learning_rate
+        self.biases += self.delta[0] * learning_rate
 
     def forward(self, inputs):
         self.inputs = inputs
-        self.outputs = sigmoid(dot(inputs, self.weights))
+        self.outputs = self.activation.activation(dot(inputs, self.weights) + self.biases)
 
 
 class NeuralNetwork():
@@ -57,7 +85,7 @@ class NeuralNetwork():
             # itterate forwards over all layers
             for l in self.layers:
                 # adjust weights based on delta
-                l.adjust()
+                l.adjust(0.1)
 
     def forward(self, inputs):
 
@@ -76,7 +104,7 @@ if __name__ == "__main__":
 
     random.seed(1)
     
-    layers = [ NeuronLayer(4, 3), NeuronLayer(4, 4), NeuronLayer(4, 4), NeuronLayer(1, 4)]
+    layers = [ Layer(3, 4), Layer(4, 4), Layer(4, 4), Layer(4, 1)]
 
     NN = NeuralNetwork(layers)
 
